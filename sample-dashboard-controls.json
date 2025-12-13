@@ -1,0 +1,89 @@
+{
+  "name": "Device Control Panel",
+  "description": "Example dashboard for device control and monitoring",
+  "pages": [
+    {
+      "id": "page-controls",
+      "name": "Controls",
+      "widgets": [
+        {
+          "id": "widget-power-switch",
+          "type": "switch",
+          "title": "Main Power",
+          "position": { "x": 50, "y": 50 },
+          "size": { "width": 200, "height": 100 },
+          "config": {
+            "defaultState": false,
+            "onLabel": "ON",
+            "offLabel": "OFF"
+          }
+        },
+        {
+          "id": "widget-led-button",
+          "type": "button",
+          "title": "Toggle LED",
+          "position": { "x": 300, "y": 50 },
+          "size": { "width": 200, "height": 100 },
+          "config": {
+            "label": "Toggle",
+            "variant": "primary"
+          }
+        },
+        {
+          "id": "widget-brightness-slider",
+          "type": "slider",
+          "title": "Brightness",
+          "position": { "x": 550, "y": 50 },
+          "size": { "width": 300, "height": 100 },
+          "config": {
+            "min": 0,
+            "max": 100,
+            "value": 50,
+            "step": 1,
+            "unit": "%"
+          }
+        },
+        {
+          "id": "widget-speed-gauge",
+          "type": "gauge",
+          "title": "Motor Speed",
+          "position": { "x": 50, "y": 200 },
+          "size": { "width": 250, "height": 250 },
+          "config": {
+            "min": 0,
+            "max": 3000,
+            "value": 1500,
+            "unit": "RPM"
+          }
+        },
+        {
+          "id": "widget-label-info",
+          "type": "label",
+          "title": "System Info",
+          "position": { "x": 350, "y": 200 },
+          "size": { "width": 300, "height": 150 },
+          "config": {
+            "text": "Device connected and operational",
+            "fontSize": "16px",
+            "textAlign": "center"
+          }
+        }
+      ],
+      "layout": {
+        "gridSize": 20,
+        "snapToGrid": true,
+        "backgroundColor": "#111827"
+      }
+    }
+  ],
+  "theme": {
+    "primaryColor": "#8b5cf6",
+    "secondaryColor": "#06b6d4",
+    "backgroundColor": "#111827",
+    "textColor": "#f9fafb"
+  },
+  "settings": {
+    "isPublic": false,
+    "enableWebSocket": true
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "name": "Sample Temperature Monitor",
+  "description": "Example dashboard for temperature monitoring",
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Main Dashboard",
+      "widgets": [
+        {
+          "id": "widget-temp-gauge",
+          "type": "gauge",
+          "title": "Temperature",
+          "position": { "x": 100, "y": 100 },
+          "size": { "width": 300, "height": 300 },
+          "config": {
+            "min": 0,
+            "max": 100,
+            "value": 25,
+            "unit": "°C",
+            "thresholds": [
+              { "value": 0, "color": "#3b82f6", "label": "Cold" },
+              { "value": 50, "color": "#10b981", "label": "Normal" },
+              { "value": 80, "color": "#f59e0b", "label": "Warm" },
+              { "value": 90, "color": "#ef4444", "label": "Hot" }
+            ]
+          }
+        },
+        {
+          "id": "widget-temp-chart",
+          "type": "chart",
+          "title": "Temperature History",
+          "position": { "x": 450, "y": 100 },
+          "size": { "width": 500, "height": 300 },
+          "config": {
+            "chartType": "line",
+            "dataPoints": 20,
+            "refreshInterval": 5000
+          }
+        },
+        {
+          "id": "widget-status",
+          "type": "status",
+          "title": "System Status",
+          "position": { "x": 100, "y": 450 },
+          "size": { "width": 200, "height": 100 },
+          "config": {
+            "status": "online",
+            "statusText": "Normal Operation"
+          }
+        }
+      ],
+      "layout": {
+        "gridSize": 20,
+        "snapToGrid": true,
+        "backgroundColor": "#1f2937"
+      }
+    }
+  ],
+  "theme": {
+    "primaryColor": "#3b82f6",
+    "secondaryColor": "#10b981",
+    "backgroundColor": "#1f2937",
+    "textColor": "#f3f4f6"
+  },
+  "settings": {
+    "isPublic": false,
+    "enableWebSocket": true,
+    "refreshInterval": 5000
+  }
+}
