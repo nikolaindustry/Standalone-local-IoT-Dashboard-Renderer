@@ -6,11 +6,10 @@ This feature adds visual feedback to the dashboard UI to clearly indicate when a
 
 ## Features Implemented
 
-### 1. Header-Integrated Status Bar
-A status bar integrated into the dashboard header that displays:
+### 1. Corner WebSocket Status Indicator
+A subtle WebSocket status indicator positioned in the top-right corner of the dashboard area that displays:
 - **Connection Status**: Visual indicator (green for connected, red for disconnected)
-- **Server URL**: Shows the WebSocket server endpoint
-- **Connection ID**: Displays the device/connection identifier
+- **Minimal Text Labels**: "Connected"/"Disconnected" text visible on larger screens
 - **Live Indicator**: Pulsing animation when connected to show real-time activity
 
 ### 2. Toast Notifications
@@ -24,9 +23,9 @@ Following the industrial UI design language:
 - **Color Coding**: 
   - Emerald green (#10b981) for connected state
   - Red (#ef4444) for disconnected/error states
-- **Monospace Fonts**: Technical appearance with `font-mono` class
-- **Uppercase Labels**: Clear status indicators
-- **Backdrop Blur**: Semi-transparent status bar with blur effect
+- **Subtle Placement**: Corner indicator that doesn't disrupt dashboard layout
+- **Responsive Design**: Text labels hidden on small screens
+- **Backdrop Blur**: Semi-transparent indicator with blur effect
 - **Pulse Animations**: Live indicator shows real-time activity
 
 ## Implementation Details
@@ -34,11 +33,11 @@ Following the industrial UI design language:
 ### Component Modifications
 
 #### `src/components/IoTPreview.tsx`
-- Added connection status state tracking (`wsConnected`, `wsUrl`, `wsConnectionId`)
-- Implemented `deviceWebSocketService.onConnectionChange` listener
-- Added toast notifications for connection events
-- Integrated header-integrated status bar in the UI layout (no longer overlays content)
-- Removed fixed positioning that caused overlap with dashboard elements
+- Removed separate status bar that overlapped content
+- Added corner WebSocket status indicator in top-right of dashboard area
+- Maintained toast notifications for connection events
+- Preserved connection state tracking (`wsConnected`, `wsUrl`, `wsConnectionId`)
+- Implemented responsive design (labels hidden on small screens)
 
 #### `src/App.tsx`
 - Added `<Toaster />` component to render toast notifications

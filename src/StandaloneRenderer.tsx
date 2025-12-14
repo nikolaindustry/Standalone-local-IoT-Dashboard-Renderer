@@ -10,6 +10,7 @@ import { Upload, Settings, Play, FileJson, Trash2, Download, Plus, List, Search,
 import type { IoTDashboardConfig } from './types';
 import * as DashboardStorage from './utils/dashboardStorage';
 import type { StoredDashboard } from './utils/dashboardStorage';
+import deviceWebSocketService from './services/deviceWebSocketService';
 
 /**
  * Standalone IoT Dashboard Renderer
@@ -38,6 +39,7 @@ export const StandaloneRenderer: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showSettingsPanel, setShowSettingsPanel] = useState<boolean>(false);
+  const [wsConnected, setWsConnected] = useState<boolean>(false);
 
   // Load saved configuration from localStorage
   useEffect(() => {
@@ -50,12 +52,50 @@ export const StandaloneRenderer: React.FC = () => {
     // Load all stored dashboards
     loadStoredDashboards();
     
-    // Load active dashboard if exists
-    const activeDashboard = DashboardStorage.getActiveDashboard();
-    if (activeDashboard) {
-      setDashboardConfig(activeDashboard.config);
-      setSelectedDashboardId(activeDashboard.id);
+    // Check for dashboard ID in URL
+    const params = new URLSearchParams(window.location.search);
+    const urlDashboardId = params.get('dashboard');
+    
+    if (urlDashboardId) {
+      // Try to load dashboard from URL parameter
+      const dashboard = DashboardStorage.getDashboardById(urlDashboardId);
+      if (dashboard) {
+        console.log('[StandaloneRenderer] Loading dashboard from URL:', urlDashboardId);
+        setDashboardConfig(dashboard.config);
+        setSelectedDashboardId(dashboard.id);
+        DashboardStorage.setActiveDashboardId(dashboard.id);
+        // Auto-launch dashboard if WebSocket config exists
+        if (savedWsUrl && savedConnId) {
+          setIsConfigured(true);
+        }
+      } else {
+        console.warn('[StandaloneRenderer] Dashboard not found for URL ID:', urlDashboardId);
+        setError(`Dashboard "${urlDashboardId}" not found. Please import it first.`);
+      }
+    } else {
+      // Load active dashboard if no URL parameter
+      const activeDashboard = DashboardStorage.getActiveDashboard();
+      if (activeDashboard) {
+        setDashboardConfig(activeDashboard.config);
+        setSelectedDashboardId(activeDashboard.id);
+      }
     }
+  }, []);
+
+  // Monitor WebSocket connection status
+  useEffect(() => {
+    const handleConnectionChange = (connected: boolean) => {
+      setWsConnected(connected);
+    };
+
+    const unsubscribe = deviceWebSocketService.onConnectionChange(handleConnectionChange);
+    
+    // Set initial connection status
+    setWsConnected(deviceWebSocketService.isConnected());
+    
+    return () => {
+      unsubscribe();
+    };
   }, []);
   
   // Load all dashboards from storage
@@ -104,6 +144,12 @@ export const StandaloneRenderer: React.FC = () => {
     DashboardStorage.setActiveDashboardId(dashboard.id);
     setFileName(dashboard.name);
     setError('');
+    
+    // Update URL without page reload
+    const url = new URL(window.location.href);
+    url.searchParams.set('dashboard', dashboard.id);
+    window.history.pushState({}, '', url);
+    console.log('[StandaloneRenderer] Updated URL for dashboard:', dashboard.id);
   };
   
   // Delete a dashboard
@@ -121,12 +167,6 @@ export const StandaloneRenderer: React.FC = () => {
         setFileName('');
       }
     }
-  };
-  
-  // Export a dashboard
-  const handleExportDashboard = (dashboard: StoredDashboard, event: React.MouseEvent) => {
-    event.stopPropagation();
-    DashboardStorage.exportDashboardToFile(dashboard);
   };
 
   const handleStartRenderer = () => {
@@ -149,9 +189,14 @@ export const StandaloneRenderer: React.FC = () => {
     localStorage.setItem('standalone_ws_url', websocketUrl);
     localStorage.setItem('standalone_conn_id', connectionId);
     
-    // Save active dashboard ID
+    // Save active dashboard ID and update URL
     if (selectedDashboardId) {
       DashboardStorage.setActiveDashboardId(selectedDashboardId);
+      
+      // Update URL to include dashboard ID
+      const url = new URL(window.location.href);
+      url.searchParams.set('dashboard', selectedDashboardId);
+      window.history.pushState({}, '', url);
     }
 
     setIsConfigured(true);
@@ -160,6 +205,23 @@ export const StandaloneRenderer: React.FC = () => {
 
   const handleReconfigure = () => {
     setIsConfigured(false);
+  };
+  
+  // Copy dashboard URL to clipboard
+  const handleCopyDashboardLink = (dashboardId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    
+    const url = new URL(window.location.origin + window.location.pathname);
+    url.searchParams.set('dashboard', dashboardId);
+    
+    navigator.clipboard.writeText(url.toString()).then(() => {
+      // Show success feedback (you could add a toast notification here)
+      console.log('[StandaloneRenderer] Dashboard link copied:', url.toString());
+      alert('Dashboard link copied to clipboard!');
+    }).catch((err) => {
+      console.error('[StandaloneRenderer] Failed to copy link:', err);
+      alert('Failed to copy link. Please copy manually: ' + url.toString());
+    });
   };
 
   if (!isConfigured) {
@@ -381,7 +443,10 @@ export const StandaloneRenderer: React.FC = () => {
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleStartRenderer();
+                                  // Navigate to dashboard URL
+                                  const url = new URL(window.location.origin + window.location.pathname);
+                                  url.searchParams.set('dashboard', dashboard.id);
+                                  window.location.href = url.toString();
                                 }}
                                 className={`h-8 border font-mono text-xs uppercase tracking-wider ${
                                   selectedDashboardId === dashboard.id
@@ -395,15 +460,15 @@ export const StandaloneRenderer: React.FC = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={(e) => handleExportDashboard(dashboard, e)}
+                                onClick={(e) => handleCopyDashboardLink(dashboard.id, e)}
                                 className={`h-8 border font-mono text-xs uppercase tracking-wider ${
                                   selectedDashboardId === dashboard.id
                                     ? 'bg-transparent text-white border-white/20 hover:bg-white/5'
                                     : 'bg-transparent text-[#263347] border-[#263347]/20 hover:bg-[#F9F9FA]'
                                 }`}
-                                title="Export dashboard"
+                                title="Copy dashboard link"
                               >
-                                <Download className="w-3.5 h-3.5" />
+                                <ExternalLink className="w-3.5 h-3.5" />
                               </Button>
                               <Button
                                 variant="ghost"
@@ -607,19 +672,6 @@ export const StandaloneRenderer: React.FC = () => {
               </div>
             </div>
           )}
-
-          {/* Launch Button - Always Visible */}
-          <div className="flex justify-center pt-2">
-            <Button
-              onClick={handleStartRenderer}
-              size="lg"
-              disabled={!dashboardConfig}
-              className="bg-[#263347] hover:bg-[#263347]/90 text-white px-12 py-6 text-base font-bold border-2 border-[#263347] shadow-lg disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider font-mono"
-            >
-              <Play className="w-6 h-6 mr-3" />
-              Initialize Dashboard
-            </Button>
-          </div>
         </div>
       </div>
     );
@@ -642,10 +694,22 @@ export const StandaloneRenderer: React.FC = () => {
                   <h2 className="text-lg font-bold text-[#263347] uppercase tracking-wide">
                     {dashboardConfig?.name || 'IoT Dashboard'}
                   </h2>
-                  <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30">
+                  <div className={`px-3 py-1 border ${
+                    wsConnected 
+                      ? 'bg-emerald-500/10 border-emerald-500/30' 
+                      : 'bg-red-500/10 border-red-500/30'
+                  }`}>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-xs font-mono text-emerald-600 uppercase tracking-wider font-bold">Active</span>
+                      <div className={`w-2 h-2 rounded-full ${
+                        wsConnected 
+                          ? 'bg-emerald-500 animate-pulse' 
+                          : 'bg-red-500'
+                      }`} />
+                      <span className={`text-xs font-mono uppercase tracking-wider font-bold ${
+                        wsConnected 
+                          ? 'text-emerald-600' 
+                          : 'text-red-600'
+                      }`}>{wsConnected ? 'Connected' : 'Disconnected'}</span>
                     </div>
                   </div>
                 </div>
@@ -677,16 +741,14 @@ export const StandaloneRenderer: React.FC = () => {
             <div className="flex items-center gap-2">
               {selectedDashboardId && (
                 <Button
-                  onClick={() => {
-                    const dashboard = storedDashboards.find(d => d.id === selectedDashboardId);
-                    if (dashboard) handleExportDashboard(dashboard, {} as any);
-                  }}
+                  onClick={(e) => handleCopyDashboardLink(selectedDashboardId, e)}
                   variant="ghost"
                   size="sm"
                   className="bg-transparent border border-[#263347]/20 text-[#263347] hover:bg-[#F9F9FA] hover:border-[#263347] uppercase text-xs font-mono tracking-wider h-9 px-4"
+                  title="Copy dashboard link"
                 >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Copy Link
                 </Button>
               )}
               <Button

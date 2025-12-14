@@ -10,7 +10,6 @@ import { IoTDashboardWidget } from '../types';
 import { supabase } from '@/integrations/supabase/client';
 import deviceWebSocketService from '@/services/deviceWebSocketService';
 import { useToast } from '@/hooks/use-toast';
-import { Wifi, WifiOff, Activity } from 'lucide-react';
 
 export const IoTPreview: React.FC = () => {
   const { state, actions } = useIoTBuilder();
@@ -295,59 +294,6 @@ export const IoTPreview: React.FC = () => {
         ...getBackgroundStyle(),
       }}
     >
-      {/* WebSocket Connection Status Bar - Integrated in Header */}
-      <div 
-        className={`px-4 py-2 flex items-center justify-between border-b transition-all ${wsConnected 
-          ? 'bg-emerald-500/10 border-emerald-500/30 backdrop-blur-sm' 
-          : 'bg-red-500/10 border-red-500/30 backdrop-blur-sm'
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          {wsConnected ? (
-            <>
-              <div className="relative">
-                <Wifi className="w-4 h-4 text-emerald-500" />
-                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              </div>
-              <span className="text-xs font-mono text-emerald-600 font-medium uppercase tracking-wider">
-                Connected
-              </span>
-            </>
-          ) : (
-            <>
-              <WifiOff className="w-4 h-4 text-red-500" />
-              <span className="text-xs font-mono text-red-600 font-medium uppercase tracking-wider">
-                Disconnected
-              </span>
-            </>
-          )}
-          {wsUrl && (
-            <>
-              <div className="h-3 w-px bg-gray-300" />
-              <span className="text-xs font-mono text-gray-600 truncate max-w-xs">
-                {wsUrl}
-              </span>
-            </>
-          )}
-          {wsConnectionId && (
-            <>
-              <div className="h-3 w-px bg-gray-300" />
-              <span className="text-xs font-mono text-gray-500">
-                ID: {wsConnectionId}
-              </span>
-            </>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {wsConnected && (
-            <div className="flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
-              <span className="text-xs font-mono text-emerald-600">LIVE</span>
-            </div>
-          )}
-        </div>
-      </div>
-
       <div 
         className="relative"
         style={{
