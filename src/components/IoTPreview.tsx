@@ -31,19 +31,38 @@ export const IoTPreview: React.FC = () => {
   // Get current user session and connect to WebSocket with appropriate target ID
   useEffect(() => {
     const initializeConnection = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-      setCurrentUserId(userId);
+      // Check for standalone mode configuration
+      const standaloneConfig = (window as any).__STANDALONE_WS_CONFIG__;
       
-      if (userId) {
-        // Use custom target ID if set, otherwise use user ID
-        const targetId = state.config?.settings.customTargetId || userId;
-        console.log('[IoTPreview] Connecting WebSocket with target ID:', targetId);
+      if (standaloneConfig) {
+        // Standalone mode - use configured connection ID
+        const targetId = standaloneConfig.id || 'standalone-dashboard';
+        console.log('[IoTPreview] Standalone mode detected');
+        console.log('[IoTPreview] Connecting to:', standaloneConfig.url);
+        console.log('[IoTPreview] Connection ID:', targetId);
         
         try {
           await deviceWebSocketService.connect(targetId);
+          console.log('[IoTPreview] WebSocket connection established in standalone mode');
         } catch (error) {
-          console.error('[IoTPreview] Failed to connect WebSocket:', error);
+          console.error('[IoTPreview] Failed to connect WebSocket in standalone mode:', error);
+        }
+      } else {
+        // Normal mode - use Supabase authentication
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        setCurrentUserId(userId);
+        
+        if (userId) {
+          // Use custom target ID if set, otherwise use user ID
+          const targetId = state.config?.settings.customTargetId || userId;
+          console.log('[IoTPreview] Connecting WebSocket with target ID:', targetId);
+          
+          try {
+            await deviceWebSocketService.connect(targetId);
+          } catch (error) {
+            console.error('[IoTPreview] Failed to connect WebSocket:', error);
+          }
         }
       }
     };
