@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Standalone IoT Renderer</string>
+    <string name="title_activity_main">Standalone IoT Renderer</string>
+    <string name="package_name">com.nikolaindustry.iot.renderer</string>
+    <string name="custom_url_scheme">com.nikolaindustry.iot.renderer</string>
+</resources>
