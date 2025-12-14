@@ -6,8 +6,8 @@ This feature adds visual feedback to the dashboard UI to clearly indicate when a
 
 ## Features Implemented
 
-### 1. Persistent Status Bar
-A fixed status bar at the top of the dashboard that displays:
+### 1. Header-Integrated Status Bar
+A status bar integrated into the dashboard header that displays:
 - **Connection Status**: Visual indicator (green for connected, red for disconnected)
 - **Server URL**: Shows the WebSocket server endpoint
 - **Connection ID**: Displays the device/connection identifier
@@ -37,8 +37,8 @@ Following the industrial UI design language:
 - Added connection status state tracking (`wsConnected`, `wsUrl`, `wsConnectionId`)
 - Implemented `deviceWebSocketService.onConnectionChange` listener
 - Added toast notifications for connection events
-- Integrated persistent status bar in the UI layout
-- Added 48px top padding to accommodate fixed status bar
+- Integrated header-integrated status bar in the UI layout (no longer overlays content)
+- Removed fixed positioning that caused overlap with dashboard elements
 
 #### `src/App.tsx`
 - Added `<Toaster />` component to render toast notifications
@@ -142,9 +142,10 @@ To verify the WebSocket connection status indicators are working:
 ✅ **Immediate Feedback**: Users instantly know connection status  
 ✅ **Visual Clarity**: Color-coded indicators follow industrial design  
 ✅ **Detailed Information**: Shows server URL and connection ID  
-✅ **Non-Intrusive**: Status bar is compact, toasts auto-dismiss  
+✅ **Non-Intrusive**: Status bar is integrated in header, toasts auto-dismiss  
 ✅ **Accessible**: Clear text labels and visual icons  
 ✅ **Consistent**: Matches existing industrial UI design language  
+✅ **No Overlap**: Status bar is properly contained in header area
 
 ## Related Files
 

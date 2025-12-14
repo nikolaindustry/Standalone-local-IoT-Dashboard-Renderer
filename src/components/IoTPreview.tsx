@@ -295,12 +295,11 @@ export const IoTPreview: React.FC = () => {
         ...getBackgroundStyle(),
       }}
     >
-      {/* WebSocket Connection Status Bar */}
+      {/* WebSocket Connection Status Bar - Integrated in Header */}
       <div 
-        className={`fixed top-0 left-0 right-0 z-50 px-4 py-2 flex items-center justify-between border-b transition-all ${
-          wsConnected 
-            ? 'bg-emerald-500/10 border-emerald-500/30 backdrop-blur-sm' 
-            : 'bg-red-500/10 border-red-500/30 backdrop-blur-sm'
+        className={`px-4 py-2 flex items-center justify-between border-b transition-all ${wsConnected 
+          ? 'bg-emerald-500/10 border-emerald-500/30 backdrop-blur-sm' 
+          : 'bg-red-500/10 border-red-500/30 backdrop-blur-sm'
         }`}
       >
         <div className="flex items-center gap-3">
@@ -356,7 +355,6 @@ export const IoTPreview: React.FC = () => {
           minWidth: (state.editingViewMode === 'mobile' || (state.mode === 'preview' && isMobileViewport)) ? '375px' : '1200px',
           minHeight: (state.editingViewMode === 'mobile' || (state.mode === 'preview' && isMobileViewport)) ? '667px' : '800px',
           maxWidth: (state.editingViewMode === 'mobile' || (state.mode === 'preview' && isMobileViewport)) ? '375px' : undefined,
-          paddingTop: '48px', // Add padding for status bar
         }}
       >
         {/* SVG layer for connections */}
