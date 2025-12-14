@@ -9,13 +9,19 @@ import { useScriptExecution } from '../hooks/useScriptExecution';
 import { IoTDashboardWidget } from '../types';
 import { supabase } from '@/integrations/supabase/client';
 import deviceWebSocketService from '@/services/deviceWebSocketService';
+import { useToast } from '@/hooks/use-toast';
+import { Wifi, WifiOff, Activity } from 'lucide-react';
 
 export const IoTPreview: React.FC = () => {
   const { state, actions } = useIoTBuilder();
+  const { toast } = useToast();
   const [widgetStates, setWidgetStates] = useState<Map<string, any>>(new Map());
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [wsConnected, setWsConnected] = useState<boolean>(false);
+  const [wsUrl, setWsUrl] = useState<string>('');
+  const [wsConnectionId, setWsConnectionId] = useState<string>('');
 
   // Detect mobile viewport size
   useEffect(() => {
@@ -28,6 +34,38 @@ export const IoTPreview: React.FC = () => {
     return () => window.removeEventListener('resize', checkViewport);
   }, []);
 
+  // Monitor WebSocket connection status
+  useEffect(() => {
+    const handleConnectionChange = (connected: boolean) => {
+      setWsConnected(connected);
+      
+      if (connected) {
+        toast({
+          title: 'WebSocket Connected',
+          description: `Connected to ${wsUrl || 'server'}`,
+          variant: 'default',
+        });
+        console.log('[IoTPreview] WebSocket connected');
+      } else {
+        toast({
+          title: 'WebSocket Disconnected',
+          description: 'Connection to server lost',
+          variant: 'destructive',
+        });
+        console.log('[IoTPreview] WebSocket disconnected');
+      }
+    };
+
+    const unsubscribe = deviceWebSocketService.onConnectionChange(handleConnectionChange);
+    
+    // Set initial connection status
+    setWsConnected(deviceWebSocketService.isConnected());
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [toast, wsUrl]);
+
   // Get current user session and connect to WebSocket with appropriate target ID
   useEffect(() => {
     const initializeConnection = async () => {
@@ -37,8 +75,13 @@ export const IoTPreview: React.FC = () => {
       if (standaloneConfig) {
         // Standalone mode - use configured connection ID
         const targetId = standaloneConfig.id || 'standalone-dashboard';
+        const url = standaloneConfig.url || '';
+        
+        setWsUrl(url);
+        setWsConnectionId(targetId);
+        
         console.log('[IoTPreview] Standalone mode detected');
-        console.log('[IoTPreview] Connecting to:', standaloneConfig.url);
+        console.log('[IoTPreview] Connecting to:', url);
         console.log('[IoTPreview] Connection ID:', targetId);
         
         try {
@@ -46,6 +89,11 @@ export const IoTPreview: React.FC = () => {
           console.log('[IoTPreview] WebSocket connection established in standalone mode');
         } catch (error) {
           console.error('[IoTPreview] Failed to connect WebSocket in standalone mode:', error);
+          toast({
+            title: 'Connection Failed',
+            description: 'Failed to establish WebSocket connection',
+            variant: 'destructive',
+          });
         }
       } else {
         // Normal mode - use Supabase authentication
@@ -56,19 +104,26 @@ export const IoTPreview: React.FC = () => {
         if (userId) {
           // Use custom target ID if set, otherwise use user ID
           const targetId = state.config?.settings.customTargetId || userId;
+          setWsConnectionId(targetId);
+          
           console.log('[IoTPreview] Connecting WebSocket with target ID:', targetId);
           
           try {
             await deviceWebSocketService.connect(targetId);
           } catch (error) {
             console.error('[IoTPreview] Failed to connect WebSocket:', error);
+            toast({
+              title: 'Connection Failed',
+              description: 'Failed to establish WebSocket connection',
+              variant: 'destructive',
+            });
           }
         }
       }
     };
     
     initializeConnection();
-  }, [state.config?.settings.customTargetId]);
+  }, [state.config?.settings.customTargetId, toast]);
 
   // Handle WebSocket messages and route them to widgets by widgetId
   useEffect(() => {
@@ -240,6 +295,60 @@ export const IoTPreview: React.FC = () => {
         ...getBackgroundStyle(),
       }}
     >
+      {/* WebSocket Connection Status Bar */}
+      <div 
+        className={`fixed top-0 left-0 right-0 z-50 px-4 py-2 flex items-center justify-between border-b transition-all ${
+          wsConnected 
+            ? 'bg-emerald-500/10 border-emerald-500/30 backdrop-blur-sm' 
+            : 'bg-red-500/10 border-red-500/30 backdrop-blur-sm'
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          {wsConnected ? (
+            <>
+              <div className="relative">
+                <Wifi className="w-4 h-4 text-emerald-500" />
+                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              </div>
+              <span className="text-xs font-mono text-emerald-600 font-medium uppercase tracking-wider">
+                Connected
+              </span>
+            </>
+          ) : (
+            <>
+              <WifiOff className="w-4 h-4 text-red-500" />
+              <span className="text-xs font-mono text-red-600 font-medium uppercase tracking-wider">
+                Disconnected
+              </span>
+            </>
+          )}
+          {wsUrl && (
+            <>
+              <div className="h-3 w-px bg-gray-300" />
+              <span className="text-xs font-mono text-gray-600 truncate max-w-xs">
+                {wsUrl}
+              </span>
+            </>
+          )}
+          {wsConnectionId && (
+            <>
+              <div className="h-3 w-px bg-gray-300" />
+              <span className="text-xs font-mono text-gray-500">
+                ID: {wsConnectionId}
+              </span>
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {wsConnected && (
+            <div className="flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+              <span className="text-xs font-mono text-emerald-600">LIVE</span>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div 
         className="relative"
         style={{
@@ -247,6 +356,7 @@ export const IoTPreview: React.FC = () => {
           minWidth: (state.editingViewMode === 'mobile' || (state.mode === 'preview' && isMobileViewport)) ? '375px' : '1200px',
           minHeight: (state.editingViewMode === 'mobile' || (state.mode === 'preview' && isMobileViewport)) ? '667px' : '800px',
           maxWidth: (state.editingViewMode === 'mobile' || (state.mode === 'preview' && isMobileViewport)) ? '375px' : undefined,
+          paddingTop: '48px', // Add padding for status bar
         }}
       >
         {/* SVG layer for connections */}
