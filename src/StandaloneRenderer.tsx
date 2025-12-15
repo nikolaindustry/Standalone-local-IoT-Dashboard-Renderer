@@ -443,10 +443,18 @@ export const StandaloneRenderer: React.FC = () => {
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // Navigate to dashboard URL
-                                  const url = new URL(window.location.origin + window.location.pathname);
-                                  url.searchParams.set('dashboard', dashboard.id);
-                                  window.location.href = url.toString();
+                                  // Load dashboard and launch if WebSocket is configured
+                                  handleLoadDashboard(dashboard);
+                                  
+                                  // Auto-launch if WebSocket config exists
+                                  const savedWsUrl = localStorage.getItem('standalone_ws_url');
+                                  const savedConnId = localStorage.getItem('standalone_conn_id');
+                                  if (savedWsUrl && savedConnId) {
+                                    // Small delay to ensure state is updated
+                                    setTimeout(() => {
+                                      setIsConfigured(true);
+                                    }, 100);
+                                  }
                                 }}
                                 className={`h-8 border font-mono text-xs uppercase tracking-wider ${
                                   selectedDashboardId === dashboard.id
