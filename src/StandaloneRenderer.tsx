@@ -40,6 +40,7 @@ export const StandaloneRenderer: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showSettingsPanel, setShowSettingsPanel] = useState<boolean>(false);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
+  const [isLaunching, setIsLaunching] = useState<boolean>(false);
 
   // Load saved configuration from localStorage
   useEffect(() => {
@@ -441,29 +442,71 @@ export const StandaloneRenderer: React.FC = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.stopPropagation();
-                                  // Load dashboard and launch if WebSocket is configured
-                                  handleLoadDashboard(dashboard);
                                   
-                                  // Auto-launch if WebSocket config exists
-                                  const savedWsUrl = localStorage.getItem('standalone_ws_url');
-                                  const savedConnId = localStorage.getItem('standalone_conn_id');
-                                  if (savedWsUrl && savedConnId) {
-                                    // Small delay to ensure state is updated
-                                    setTimeout(() => {
-                                      setIsConfigured(true);
-                                    }, 100);
+                                  console.log('[VIEW Button] Clicked for dashboard:', dashboard.id);
+                                  setIsLaunching(true);
+                                  setError('');
+                                  
+                                  try {
+                                    // Load dashboard state
+                                    handleLoadDashboard(dashboard);
+                                    console.log('[VIEW Button] Dashboard loaded into state');
+                                    
+                                    // Check if WebSocket config exists
+                                    const savedWsUrl = localStorage.getItem('standalone_ws_url');
+                                    const savedConnId = localStorage.getItem('standalone_conn_id');
+                                    
+                                    if (savedWsUrl && savedConnId) {
+                                      console.log('[VIEW Button] WebSocket config found, launching dashboard...');
+                                      // Update state for launching
+                                      setWebsocketUrl(savedWsUrl);
+                                      setConnectionId(savedConnId);
+                                      
+                                      // Small delay to ensure state updates
+                                      setTimeout(() => {
+                                        setIsConfigured(true);
+                                        setIsLaunching(false);
+                                        console.log('[VIEW Button] Dashboard launched successfully');
+                                      }, 150);
+                                    } else {
+                                      console.warn('[VIEW Button] No WebSocket config found');
+                                      setIsLaunching(false);
+                                      setError('Please configure WebSocket connection settings first. Scroll down to "Show Configuration Panel" to set up your connection.');
+                                      setShowSettingsPanel(true);
+                                      // Scroll to settings panel
+                                      setTimeout(() => {
+                                        const settingsButton = document.querySelector('[class*="justify-center"]');
+                                        settingsButton?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                      }, 100);
+                                    }
+                                  } catch (error) {
+                                    console.error('[VIEW Button] Error:', error);
+                                    setIsLaunching(false);
+                                    setError(`Failed to launch dashboard: ${error instanceof Error ? error.message : 'Unknown error'}`);
                                   }
                                 }}
+                                disabled={isLaunching}
                                 className={`h-8 border font-mono text-xs uppercase tracking-wider ${
-                                  selectedDashboardId === dashboard.id
+                                  isLaunching
+                                    ? 'bg-emerald-500/20 text-emerald-700 border-emerald-500/30 cursor-wait'
+                                    : selectedDashboardId === dashboard.id
                                     ? 'bg-white text-[#263347] border-white hover:bg-white/90'
                                     : 'bg-transparent text-[#263347] border-[#263347]/20 hover:bg-[#F9F9FA]'
                                 }`}
                               >
-                                <Eye className="w-3.5 h-3.5 mr-1.5" />
-                                VIEW
+                                {isLaunching ? (
+                                  <>
+                                    <div className="w-3.5 h-3.5 mr-1.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                                    LOADING
+                                  </>
+                                ) : (
+                                  <>
+                                    <Eye className="w-3.5 h-3.5 mr-1.5" />
+                                    VIEW
+                                  </>
+                                )}
                               </Button>
                               <Button
                                 variant="ghost"
