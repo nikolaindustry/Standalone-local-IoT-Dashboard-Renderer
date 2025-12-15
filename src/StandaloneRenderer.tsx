@@ -442,10 +442,11 @@ export const StandaloneRenderer: React.FC = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={async (e) => {
+                                                                onClick={async (e) => {
                                   e.stopPropagation();
                                   
                                   console.log('[VIEW Button] Clicked for dashboard:', dashboard.id);
+                                  console.log('[VIEW Button] Current WebSocket config - URL:', websocketUrl, 'ConnID:', connectionId);
                                   setIsLaunching(true);
                                   setError('');
                                   
@@ -454,15 +455,19 @@ export const StandaloneRenderer: React.FC = () => {
                                     handleLoadDashboard(dashboard);
                                     console.log('[VIEW Button] Dashboard loaded into state');
                                     
-                                    // Check if WebSocket config exists
-                                    const savedWsUrl = localStorage.getItem('standalone_ws_url');
-                                    const savedConnId = localStorage.getItem('standalone_conn_id');
-                                    
-                                    if (savedWsUrl && savedConnId) {
+                                    // Check if WebSocket config exists in state (includes defaults)
+                                    if (websocketUrl && websocketUrl.trim() && connectionId && connectionId.trim()) {
                                       console.log('[VIEW Button] WebSocket config found, launching dashboard...');
-                                      // Update state for launching
-                                      setWebsocketUrl(savedWsUrl);
-                                      setConnectionId(savedConnId);
+                                      
+                                      // Save to localStorage if not already saved
+                                      if (!localStorage.getItem('standalone_ws_url')) {
+                                        localStorage.setItem('standalone_ws_url', websocketUrl);
+                                        console.log('[VIEW Button] Saved WebSocket URL to localStorage');
+                                      }
+                                      if (!localStorage.getItem('standalone_conn_id')) {
+                                        localStorage.setItem('standalone_conn_id', connectionId);
+                                        console.log('[VIEW Button] Saved Connection ID to localStorage');
+                                      }
                                       
                                       // Small delay to ensure state updates
                                       setTimeout(() => {
@@ -471,7 +476,7 @@ export const StandaloneRenderer: React.FC = () => {
                                         console.log('[VIEW Button] Dashboard launched successfully');
                                       }, 150);
                                     } else {
-                                      console.warn('[VIEW Button] No WebSocket config found');
+                                      console.warn('[VIEW Button] No WebSocket config found in state');
                                       setIsLaunching(false);
                                       setError('Please configure WebSocket connection settings first. Scroll down to "Show Configuration Panel" to set up your connection.');
                                       setShowSettingsPanel(true);
